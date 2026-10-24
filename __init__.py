@@ -3,13 +3,14 @@ Optical Rocket Tracking System using Kalman Filter, YOLO, and SAHI
 
 Authors:
     - Madhu Chitikela
-    - Sanjana
-    - Prashanthi
-    - Satwick
+    - Prasanthi Reddy
+    - Pudari Sathwik
+    - Sanjana Reddy
 """
 
-__author__ = "Madhu Chitikela, Sanjana, Prashanthi, Satwick"
+__author__ = "Madhu Chitikela, Prasanthi Reddy, Pudari Sathwik, Sanjana Reddy"
 __version__ = "1.0.0"
+
 
 
 from domain_validator import DomainValidator

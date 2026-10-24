@@ -19,7 +19,7 @@
 
 <p align="center">
   <b>Developed & Engineered by:</b><br/>
-  <b>Madhu Chitikela</b> &bull; <b>Sanjana</b> &bull; <b>Prashanthi</b> &bull; <b>Satwick</b>
+  <b>Madhu Chitikela</b> &bull; <b>Prasanthi Reddy</b> &bull; <b>Pudari Sathwik</b> &bull; <b>Sanjana Reddy</b>
 </p>
 
 </div>
@@ -44,7 +44,6 @@
 
 ## 📌 Executive Summary
 
-
 Autonomous ground-based optical tracking of aerospace launch vehicles during atmospheric ascent presents severe computer vision challenges:
 1. **Dynamic Plume Expansion & Flame Blooming:** Exhaust plumes violently expand, detach, and fluctuate in brightness, causing standard trackers to lose the rocket body and induce massive tracking jitter.
 2. **Mach Regime Acceleration & Cloud Occlusion:** Transonic condensation, dense cloud layers, and stage separation obscure vehicle visibility.
@@ -57,56 +56,56 @@ This system provides an end-to-end engineering solution combining **Hybrid Neura
 ## 🏗️ System Architecture
 
 ```mermaid
-graph TD
-    A[Raw Input Video / Camera Stream] --> B[Atmospheric Enhancement Pipeline]
+flowchart TD
+    A["Raw Input Video / Stream"] --> B["Atmospheric Enhancement Pipeline"]
     
-    subgraph Enhancement [Preprocessing & Haze Penetration]
-        B --> B1[LAB Color Space Transform]
-        B1 --> B2[CLAHE Adaptive Equalization]
-        B2 --> B3[Bilateral Denoising & 2D Convolutional Sharpening]
-        B3 --> B4[Gamma LUT: 0.85 Shadow Boost]
+    subgraph Enhancement ["Preprocessing & Haze Penetration"]
+        B --> B1["LAB Color Space Transform"]
+        B1 --> B2["CLAHE Adaptive Equalization"]
+        B2 --> B3["Denoising & 2D Convolution Sharpening"]
+        B3 --> B4["Gamma LUT 0.85 Shadow Boost"]
     end
     
-    B4 --> C[Hybrid Detection Engine]
+    B4 --> C["Hybrid Detection Engine"]
     
-    subgraph Detection [Dual-Stream Detector]
-        C --> C1[YOLOv8 / OBB / SAHI Sliced Predictor]
-        C --> C2[HSV Dual-Range Flame & Bright Core Segmentor]
-        C1 --> C3[NMS & Smaller-Box Overlap Suppression]
+    subgraph Detection ["Dual-Stream Detector"]
+        C --> C1["YOLOv8 / OBB / SAHI Sliced Predictor"]
+        C --> C2["HSV Flame & Bright Core Segmentor"]
+        C1 --> C3["NMS & Overlap Suppression"]
         C2 --> C3
-        C3 --> C4[Broadcast Corner Logo Masking]
+        C3 --> C4["Broadcast Logo Masking"]
     end
     
-    C4 --> D[Aerospace Domain Validator]
+    C4 --> D["Aerospace Domain Validator"]
     
-    subgraph Validation [Geometric & Aerodynamic Constraints]
-        D --> D1[Aspect Ratio Gating: 1.1 - 5.0 / 0.75 - 6.0]
-        D --> D2[Plume Spatial Positioning: Below Lower 1/3 Body]
-        D --> D3[Kinematic Velocity & Size Ratio Bounds]
-        D --> D4[Launch Tower Static Noise Rejection]
+    subgraph Validation ["Geometric & Aerodynamic Constraints"]
+        D --> D1["Aspect Ratio Gating"]
+        D --> D2["Plume Below Lower 1/3 Body"]
+        D --> D3["Kinematic Velocity Bounds"]
+        D --> D4["Launch Tower Noise Rejection"]
     end
     
-    D --> E[Multi-Layer Rocket Tracker]
+    D --> E["Multi-Layer Rocket Tracker"]
     
-    subgraph Tracking [State Estimation & Occlusion Recovery]
-        E --> E1[Strict Body-Centroid Lock: Flame Rejection]
-        E --> E2[6-State Kalman Filter: Measurement Correction]
-        E --> E3[Lucas-Kanade Optical Flow on Cloud Occlusion]
-        E --> E4[Ballistic Kalman Prediction Coasting]
-        E --> E5[HSV Hue Histogram Shot-Cut Scene Detector]
+    subgraph Tracking ["State Estimation & Occlusion Recovery"]
+        E --> E1["Strict Body-Centroid Lock"]
+        E --> E2["6-State Kalman Filter Correction"]
+        E --> E3["Lucas-Kanade Optical Flow on Occlusion"]
+        E --> E4["Kalman Prediction Coasting"]
+        E --> E5["HSV Histogram Shot-Cut Detector"]
     end
     
-    E --> F[Gimbal & Focal Zoom Simulator]
+    E --> F["Gimbal & Focal Zoom Simulator"]
     
-    subgraph Gimbal [2-Axis Motorized Mount & Telephoto Optics]
-        F --> F1[Exponential Steering Smoothing: k_steer = 0.15]
-        F --> F2[Dynamic Focal Length Controller: 50mm - 400mm]
-        F --> F3[Viewport Coordinate Remapping & Cropping]
+    subgraph Gimbal ["2-Axis Motorized Mount & Optics"]
+        F --> F1["Exponential Steering Smoothing"]
+        F --> F2["Dynamic Focal Length 50mm - 400mm"]
+        F --> F3["Viewport Remapping & Cropping"]
     end
     
-    F --> G[Live Telemetry HUD & Output Stream]
-    G --> G1[Annotated Video Stream: Crosshairs & BBoxes]
-    G --> G2[JSON Telemetry Log: Azimuth, Elevation, Focal mm]
+    F --> G["Live Telemetry HUD & Output Stream"]
+    G --> G1["Annotated Video Stream"]
+    G --> G2["JSON Telemetry Log"]
 ```
 
 ---
@@ -140,17 +139,20 @@ When launch vehicles punch through low cloud ceilings or smoke plumes:
 ### 1. State-Space Representation
 The rocket's planar motion is modeled as a 6-dimensional continuous state vector:
 
-$$\mathbf{x}_k = \begin{bmatrix} c_x & c_y & v_x & v_y & w & h \end{bmatrix}^T$$
+$$
+\mathbf{x}_k = \begin{bmatrix} c_x & c_y & v_x & v_y & w & h \end{bmatrix}^T
+$$
 
 Where:
 - $c_x, c_y$: Target centroid in pixel coordinates
 - $v_x, v_y$: First-derivative pixel velocities
 - $w, h$: Bounding box width and height
 
-### 2. Discrete State Transition Matrix ($\mathbf{F}$)
+### 2. Discrete State Transition Matrix ($\mathbf{F}$) & Measurement Matrix ($\mathbf{H}$)
 Assuming near-constant velocity between successive frames ($\Delta t = 1$):
 
-$$\mathbf{F} = \begin{bmatrix} 
+$$
+\mathbf{F} = \begin{bmatrix} 
 1 & 0 & 1 & 0 & 0 & 0 \\
 0 & 1 & 0 & 1 & 0 & 0 \\
 0 & 0 & 1 & 0 & 0 & 0 \\
@@ -163,36 +165,58 @@ $$\mathbf{F} = \begin{bmatrix}
 0 & 1 & 0 & 0 & 0 & 0 \\
 0 & 0 & 0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 0 & 0 & 1 
-\end{bmatrix}$$
+\end{bmatrix}
+$$
 
 ### 3. Prediction & Update Equations
-$$\text{State Prediction:} \quad \hat{\mathbf{x}}_{k|k-1} = \mathbf{F} \hat{\mathbf{x}}_{k-1|k-1}$$
 
-$$\text{Covariance Prediction:} \quad \mathbf{P}_{k|k-1} = \mathbf{F} \mathbf{P}_{k-1|k-1} \mathbf{F}^T + \mathbf{Q}$$
+**State Prediction:**
+$$
+\hat{\mathbf{x}}_{k|k-1} = \mathbf{F} \hat{\mathbf{x}}_{k-1|k-1}
+$$
 
-$$\text{Kalman Gain:} \quad \mathbf{K}_k = \mathbf{P}_{k|k-1} \mathbf{H}^T \left( \mathbf{H} \mathbf{P}_{k|k-1} \mathbf{H}^T + \mathbf{R} \right)^{-1}$$
+**Covariance Prediction:**
+$$
+\mathbf{P}_{k|k-1} = \mathbf{F} \mathbf{P}_{k-1|k-1} \mathbf{F}^T + \mathbf{Q}
+$$
 
-$$\text{State Update:} \quad \hat{\mathbf{x}}_{k|k} = \hat{\mathbf{x}}_{k|k-1} + \mathbf{K}_k \left( \mathbf{z}_k - \mathbf{H} \hat{\mathbf{x}}_{k|k-1} \right)$$
+**Kalman Gain:**
+$$
+\mathbf{K}_k = \mathbf{P}_{k|k-1} \mathbf{H}^T \left( \mathbf{H} \mathbf{P}_{k|k-1} \mathbf{H}^T + \mathbf{R} \right)^{-1}
+$$
+
+**State Update:**
+$$
+\hat{\mathbf{x}}_{k|k} = \hat{\mathbf{x}}_{k|k-1} + \mathbf{K}_k \left( \mathbf{z}_k - \mathbf{H} \hat{\mathbf{x}}_{k|k-1} \right)
+$$
 
 ### 4. Closed-Loop Gimbal & Dynamic Focal Zoom
 The simulated motorized tracking mount steers toward target centroid coordinates $(c_x, c_y)$ with proportional steering gain $k_{\text{steer}} = 0.15$:
 
-$$x_{g, k} = x_{g, k-1} + k_{\text{steer}} (c_x - x_{g, k-1})$$
+$$
+x_{g, k} = x_{g, k-1} + k_{\text{steer}} (c_x - x_{g, k-1})
+$$
 
-$$y_{g, k} = y_{g, k-1} + k_{\text{steer}} (c_y - y_{g, k-1})$$
+$$
+y_{g, k} = y_{g, k-1} + k_{\text{steer}} (c_y - y_{g, k-1})
+$$
 
 The lens zoom dynamically adjusts its focal length $f$ to maintain the rocket vehicle at an optimal pixel height $H_{\text{viewport}}$:
 
-$$f_{\text{target}} = \text{clip}\left( \frac{H_{\text{viewport}}}{h} \cdot f_{\text{base}}, \; f_{\min}, \; f_{\max} \right)$$
+$$
+f_{\text{target}} = \text{clip}\left( \frac{H_{\text{viewport}}}{h} \cdot f_{\text{base}}, \; f_{\min}, \; f_{\max} \right)
+$$
 
-$$f_k = f_{k-1} + k_{\text{zoom}} (f_{\text{target}} - f_{k-1})$$
+$$
+f_k = f_{k-1} + k_{\text{zoom}} (f_{\text{target}} - f_{k-1})
+$$
 
 ---
 
 ## 📁 Repository Structure
 
 ```text
-optical-tracking-using-kalman/
+Computer-vision-based-integrated-system-for-optical-tracking/
 │
 ├── domain_validator.py       # Geometric, aspect ratio, & kinematic validation rules
 ├── control_system.py         # 2-axis motorized gimbal mount & telephoto zoom simulator
@@ -209,8 +233,8 @@ optical-tracking-using-kalman/
 ├── cleanup.py                # Safe maintenance utility to remove temporary output artifacts
 │
 ├── rocket_yolo.pt            # Primary custom rocket model weights (Body, Flames, Space)
+├── rocket_yolo26.pt          # Custom comparison model weights
 ├── rocket_yolo_obb.pt        # Oriented bounding box rocket model weights
-├── yolov8n.pt                # Pretrained Ultralytics fallback model
 ├── requirements.txt          # Python dependencies
 ├── __init__.py               # Python package initialization
 └── README.md                 # Complete system documentation
@@ -222,7 +246,8 @@ optical-tracking-using-kalman/
 
 ### 1. Clone & Enter Directory
 ```bash
-cd "optical traking using kalman"
+git clone https://github.com/MadhuChitikela/Computer-vision-based-integrated-system-for-optical-tracking.git
+cd Computer-vision-based-integrated-system-for-optical-tracking
 ```
 
 ### 2. Install Python Dependencies
@@ -365,10 +390,10 @@ Yes. The detection extractor natively reads both standard axis-aligned `r.boxes`
 
 ## 👥 Authors & Engineering Team
 
-* **Madhu Chitikela** — Project Lead, Architecture & Aerospace State Estimation
-* **Sanjana** — Computer Vision & Deep Learning (YOLOv8 & SAHI)
-* **Prashanthi** — Kinematic Modeling & Control Systems (Gimbal Simulator)
-* **Satwick** — Dataset Pipeline, Optical Flow Occlusion Recovery & Benchmarking
+* **Madhu Chitikela** — Project Lead, System Architecture & Aerospace State Estimation  
+* **Prasanthi Reddy** (`prasanthireddy0506@gmail.com`) — Kinematic Modeling & Control Systems (Gimbal Simulator)  
+* **Pudari Sathwik** (`pudarisathwik@gmail.com`) — Dataset Pipeline, Optical Flow Occlusion Recovery & Benchmarking  
+* **Sanjana Reddy** (`sanjanareddy2826@gmail.com`) — Computer Vision & Deep Learning (YOLOv8 & SAHI)  
 
 ---
 
@@ -379,7 +404,7 @@ If you use this optical tracking system or components of this architecture in ac
 ```bibtex
 @software{optical_rocket_tracking_kalman_2026,
   title     = {Optical Rocket Tracking System using Kalman Filter, YOLO, and SAHI},
-  author    = {Chitikela, Madhu and Sanjana and Prashanthi and Satwick},
+  author    = {Chitikela, Madhu and Reddy, Prasanthi and Pudari, Sathwik and Reddy, Sanjana},
   year      = {2026},
   publisher = {GitHub},
   journal   = {Aerospace Computer Vision & Autonomous Ground Systems}
@@ -389,7 +414,6 @@ If you use this optical tracking system or components of this architecture in ac
 ---
 
 <div align="center">
-  <sub>Engineered by Madhu Chitikela, Sanjana, Prashanthi, and Satwick.</sub><br/>
+  <sub>Engineered by Madhu Chitikela, Prasanthi Reddy, Pudari Sathwik, and Sanjana Reddy.</sub><br/>
   <sub>Dedicated to Autonomous Aerospace Optical Tracking and Launch Vehicle Monitoring.</sub>
 </div>
-
